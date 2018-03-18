@@ -4,17 +4,29 @@ sudo: false
 matrix:
   include:
     - rust: stable
-      addons: apt: packages: [ gfortran ]
+      addons:
+        apt:
+          packages:
+            - gfortran
     - rust: beta
-      addons: apt: packages: [ gfortran ]
+      addons:
+        apt:
+          packages:
+            - gfortran
     - rust: nightly
-      addons: apt: packages: [ gfortran ]
+      addons:
+        apt:
+          packages:
+            - gfortran
 
     - rust: stable
       env: NOFORTRAN=1
 
     - rust: stable
-      addons: apt: packages: [ gfortran ]
+      addons:
+        apt:
+          packages:
+            - gfortran
       env: FEATURES="--features static"
 
     - os: osx
