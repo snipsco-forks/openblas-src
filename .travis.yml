@@ -1,22 +1,37 @@
 language: rust
+sudo: false
 
-os:
-  - linux
-  - osx
+matrix:
+  include:
+    - rust: stable
+      addons: apt: packages: [ gfortran ]
+    - rust: beta
+      addons: apt: packages: [ gfortran ]
+    - rust: nightly
+      addons: apt: packages: [ gfortran ]
 
-rust:
-  - stable
+    - rust: stable
+      env: NOFORTRAN=1
+
+    - rust: stable
+      addons: apt: packages: [ gfortran ]
+      env: FEATURES="--features static"
+
+    - os: osx
+    - os: osx
+      env: NOFORTRAN=1
+    - os: osx
+      env: FEATURES="--features static"
 
 before_install:
-  - curl https://blas-lapack-rs.github.io/travis/fortran.sh | bash
+  - |
+    if [ -z "$NOFORTRAN" ] ;
+    then
+      curl https://blas-lapack-rs.github.io/travis/fortran.sh | bash
+    fi
 
 script:
-  - cargo test -vv
-
-addons:
-  apt:
-    packages:
-      - gfortran
+  - cargo test -vv $FEATURES
 
 notifications:
   email: false
