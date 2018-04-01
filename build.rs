@@ -58,10 +58,29 @@ fn build() {
             .args(&["--sdk", "iphoneos", "--show-sdk-path" ]).output().unwrap();
         let sysroot = String::from_utf8(out.stdout).unwrap();
         cc = format!("{} -isysroot {} -arch arm64", clang.trim(), sysroot.trim());
-    } else if cargo_env("TARGET").unwrap().contains("android") {
-        panic!("ANDROID");
+    } else if cargo_env("CARGO_CFG_TARGET_OS").unwrap() == "android" {
+        args.push(format!("AR={}", cargo_env("TARGET_AR").unwrap()));
+        args.push("ARM_SOFTFP_ABI=1".into());
+        match &*cargo_env("CARGO_CFG_TARGET_ARCH").unwrap() {
+            "arm" => {
+                cc = format!("{} -march=armv6 -mfpu=vfp -funsafe-math-optimizations -ftree-vectorize", cc.replace("-gcc", "-clang"));
+                args.push("NUM_THREADS=2".into());
+                args.push("TARGET=ARMV6".into());
+            },
+            "armv7" => {
+                cc = format!("{} -march=armv7 -mfpu=vfp -funsafe-math-optimizations -ftree-vectorize", cc.replace("-gcc", "-clang"));
+                args.push("NUM_THREADS=2".into());
+                args.push("TARGET=ARMV7".into());
+            },
+            "aarch64" => {
+                cc = format!("{} -march=armv8 -funsafe-math-optimizations -ftree-vectorize", cc.replace("-gcc", "-clang"));
+                args.push("NUM_THREADS=4".into());
+                args.push("TARGET=ARMV8".into());
+            },
+            _ => panic!("Please configure openblas-src build for {}", cargo_env("TARGET").unwrap())
+        }
     } else {
-        if let Some(fc) = cargo_env("TARGET_FC_NOPE") {
+        if let Some(fc) = cargo_env("TARGET_FC") {
             args.push(format!("FC={}", fc));
             println!("cargo:rustc-link-search={}/lib", cargo_env("TARGET_SYSROOT").unwrap());
             println!("cargo:rustc-link-lib=static=gfortran");
@@ -82,12 +101,7 @@ fn build() {
         args.push("NO_SHARED=1".into());
     }
 
-    let targets = //if !feature("STATIC") {
-//        vec!("libs", "netlib", "install")
-//    } else {
-        vec!("libs", "netlib", "shared", "install")
-//    }
-    ;
+    let targets = vec!("libs", "netlib", "shared", "install");
 
     for i in targets {
         let mut build_command = Command::new("make");
